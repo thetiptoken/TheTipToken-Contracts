@@ -6,7 +6,7 @@ module.exports = function(deployer) {
 	  return deployer.deploy(tokenSell, ttt.address);
   }).then(function() {
 	  return ttt.deployed().then(function(instance) {
-		  instance.settokenSaleAddress(tokenSell.address);
+		  instance.setTokenSaleAddress(tokenSell.address);
 	  });
   }).catch(function(e){
 	  console.error(e);

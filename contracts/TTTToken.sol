@@ -52,6 +52,7 @@ contract TTTToken is ERC20, Ownable {
 	event PresaleFinalized(uint tokensRemaining);
 	event CrowdsaleFinalized(uint tokensRemaining);
 	event Burn(address indexed burner, uint256 value);
+	event TokensaleAddressSet(address tSeller, address from);
 
 	modifier onlyTokenSale() {
 		require(msg.sender == tokenSaleAddress);
@@ -154,13 +155,14 @@ contract TTTToken is ERC20, Ownable {
 	}
 
 	// Set the tokenSell contract address, can only be set once
-	function settokenSaleAddress(address _tokenSaleAddress) external onlyOwner {
+	function setTokenSaleAddress(address _tokenSaleAddress) external onlyOwner {
 		require(tokenSaleAddress == 0x0);
 		tokenSaleAddress = _tokenSaleAddress;
+		TokensaleAddressSet(tokenSaleAddress, msg.sender);
 	}
 
 	// Finalize private. If there are leftover TTT, overflow to presale
-	function finalizePrivatesale() external onlyOwner returns (bool success) {
+	function finalizePrivatesale() external onlyTokenSale returns (bool success) {
 		require(privatesaleFinalized == false);
 		uint256 amount = balanceOf(privatesaleAddress);
 		if (amount != 0) {
@@ -173,7 +175,7 @@ contract TTTToken is ERC20, Ownable {
 	}
 
 	// Finalize presale. If there are leftover TTT, overflow to crowdsale
-	function finalizePresale() external onlyOwner returns (bool success) {
+	function finalizePresale() external onlyTokenSale returns (bool success) {
 		require(presaleFinalized == false);
 		uint256 amount = balanceOf(presaleAddress);
 		if (amount != 0) {
@@ -186,7 +188,7 @@ contract TTTToken is ERC20, Ownable {
 	}
 
 	// Finalize crowdsale. If there are leftover TTT, add 10% to airdrop, 20% to ecosupply, burn 70% at a later date
-	function finalizeCrowdsale(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyOwner {
+	function finalizeCrowdsale(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyTokenSale returns(bool success) {
 		require(presaleFinalized == true && crowdsaleFinalized == false);
 		require((_burnAmount.add(_ecoAmount).add(_airdropAmount)) == crowdsaleSupply);
 		uint256 amount = balanceOf(crowdsaleAddress);
@@ -200,6 +202,7 @@ contract TTTToken is ERC20, Ownable {
 		}
 		crowdsaleFinalized = true;
 		CrowdsaleFinalized(amount);
+		return true;
 	}
 
 	/**
