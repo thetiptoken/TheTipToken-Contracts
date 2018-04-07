@@ -190,7 +190,7 @@ contract TTTToken is ERC20, Ownable {
 	// Finalize crowdsale. If there are leftover TTT, add 10% to airdrop, 20% to ecosupply, burn 70% at a later date
 	function finalizeCrowdsale(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyTokenSale returns(bool success) {
 		require(presaleFinalized == true && crowdsaleFinalized == false);
-		require((_burnAmount.add(_ecoAmount).add(_airdropAmount)) == crowdsaleSupply);
+	//	require((_burnAmount.add(_ecoAmount).add(_airdropAmount)) == crowdsaleSupply);
 		uint256 amount = balanceOf(crowdsaleAddress);
 		if (amount > 0) {
 			crowdsaleBurnAmount = _burnAmount;

@@ -8,6 +8,8 @@ import "./TTTToken.sol";
 contract TTTTokenSell is Whitelist, Pausable {
 	using SafeMath for uint;
 
+	uint public decimals = 18;
+
 	// TTTToken contract address
 	address public tokenAddress;
 	address public wallet;
@@ -63,10 +65,10 @@ contract TTTTokenSell is Whitelist, Pausable {
 		currentPhase = CurrentPhase(_phase);
 		currentPhaseRate = getPhaseRate();
 		assert(currentPhaseRate > 0);
-		if(currentPhase == CurrentPhase.Privatesale) ethMin = 50 * 10**uint(18);
+		if(currentPhase == CurrentPhase.Privatesale) ethMin = numToWei(50, decimals);
 		else {
 			ethMin = 0;
-			ethMax = 15 * 10**uint(18);
+			ethMax = numToWei(15, decimals);
 		}
 		startsAt = _startsAt;
 		endsAt = _endsAt;
@@ -80,7 +82,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 		address from = getPhaseAddress();
 		assert(from != 0x0);
 		uint256 weiAmount = msg.value;
-		uint256 tokens = weiAmount * currentPhaseRate;
+		uint256 tokens = weiAmount.mul(currentPhaseRate);
 		weiRaised = weiRaised.add(weiAmount);
 		wallet.transfer(weiAmount);
 		if(!token.transferFromTokenSell(_to, from, tokens)) revert();
@@ -93,36 +95,33 @@ contract TTTTokenSell is Whitelist, Pausable {
 		buyTokens(msg.sender);
 	}
 
-	function getPhaseAddress() internal returns (address phase) {
-		if(currentPhase == CurrentPhase.Privatesale)
-			return privatesaleAddress;
-		else if(currentPhase == CurrentPhase.Presale)
-			return presaleAddress;
-		else if(currentPhase == CurrentPhase.Crowdsale)
-			return crowdsaleAddress;
+	function finalizePhase() external onlyOwner {
+		if(currentPhase == CurrentPhase.Privatesale) token.finalizePrivatesale();
+		else if(currentPhase == CurrentPhase.Presale) token.finalizePresale();
+		endsAt = block.timestamp;
+		TokenPhaseEnded(currentPhase);
+	}
+
+	function finalizeIto(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyOwner {
+		token.finalizeCrowdsale(numToWei(_burnAmount, decimals), numToWei(_ecoAmount, decimals), numToWei(_airdropAmount, decimals));
+	}
+
+	function getPhaseAddress() internal view returns (address phase) {
+		if(currentPhase == CurrentPhase.Privatesale) return privatesaleAddress;
+		else if(currentPhase == CurrentPhase.Presale) return presaleAddress;
+		else if(currentPhase == CurrentPhase.Crowdsale) return crowdsaleAddress;
 		return 0x0;
 	}
 
 	// Amount of TTT per 1 ether. Will be updated closed to deployment
-	function getPhaseRate() internal returns (uint rate) {
-		if(currentPhase == CurrentPhase.Privatesale)
-			return 13000;
-		else if(currentPhase == CurrentPhase.Presale)
-			return 9750;
-		else if(currentPhase == CurrentPhase.Crowdsale)
-			return 8670;
+	function getPhaseRate() internal view returns (uint rate) {
+		if(currentPhase == CurrentPhase.Privatesale) return 13000;
+		else if(currentPhase == CurrentPhase.Presale) return 9750;
+		else if(currentPhase == CurrentPhase.Crowdsale) return 8670;
 		return 0;
 	}
 
-	function finalizePhase() onlyOwner {
-		if(currentPhase == CurrentPhase.Privatesale)
-			token.finalizePrivatesale();
-		else if(currentPhase == CurrentPhase.Presale)
-			token.finalizePresale();
-		TokenPhaseEnded(currentPhase);
-	}
-
-	function finalizeIto(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) onlyOwner {
-		token.finalizeCrowdsale(_burnAmount, _ecoAmount, _airdropAmount);
+	function numToWei(uint256 _num, uint _decimals) internal pure returns (uint256 w) {
+		return _num.mul(10**_decimals);
 	}
 }
