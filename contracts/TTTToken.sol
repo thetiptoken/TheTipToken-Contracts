@@ -176,7 +176,7 @@ contract TTTToken is ERC20, Ownable {
 
 	// Finalize presale. If there are leftover TTT, overflow to crowdsale
 	function finalizePresale() external onlyTokenSale returns (bool success) {
-		require(presaleFinalized == false);
+		require(presaleFinalized == false && privatesaleFinalized == true);
 		uint256 amount = balanceOf(presaleAddress);
 		if (amount != 0) {
 			addToBalance(crowdsaleAddress, amount);
@@ -190,8 +190,8 @@ contract TTTToken is ERC20, Ownable {
 	// Finalize crowdsale. If there are leftover TTT, add 10% to airdrop, 20% to ecosupply, burn 70% at a later date
 	function finalizeCrowdsale(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyTokenSale returns(bool success) {
 		require(presaleFinalized == true && crowdsaleFinalized == false);
-	//	require((_burnAmount.add(_ecoAmount).add(_airdropAmount)) == crowdsaleSupply);
 		uint256 amount = balanceOf(crowdsaleAddress);
+		assert((_burnAmount.add(_ecoAmount).add(_airdropAmount)) == amount);
 		if (amount > 0) {
 			crowdsaleBurnAmount = _burnAmount;
 			addToBalance(ecoSupplyAddress, _ecoAmount);

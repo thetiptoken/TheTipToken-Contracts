@@ -8,6 +8,11 @@ contract('tttTokenSell', function(accounts){
     return bigNum.dividedBy(new BigNumber(10).pow(18)).toNumber();
   }
 
+  function valueCheck(fbal, amt) {
+    var bal = fromBigNumberWeiToEth(fbal);
+    assert.equal(bal, amt, "The balance was not "+amt+" - It was "+bal);
+  }
+
   async function addSeconds(seconds) {
     return web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [seconds], id: 0});
   }
@@ -16,26 +21,22 @@ contract('tttTokenSell', function(accounts){
     return web3.eth.getBlock(web3.eth.blockNumber).timestamp;
   }
 
-  async function valueCheck(fbal, amt) {
-    var bal = fromBigNumberWeiToEth(fbal);
-    assert.equal(bal, amt, "The balance was not "+amt+" - It was "+bal);
-  }
-
   const ownerAddress = accounts[0];
   const testAddress = accounts[1];
   const testAddress2 = accounts[5];
-  const failAddress = accounts[3];
+  const testAddress3 = accounts[6];
+  const airdropAddress = accounts[3];
+
   const crowdsaleAddress = "0xb6d40Fb512e7c824c6a33861b233eE50c263A950";
 
   const gasAmount = 6721975;
 
-
-  it("Accepts ether and buys correct TTT per phase from TTTTokenSell", async() => {
+  it("Accepts ether and buys correct TTT per phase from TTTTokenSell - no tranfer during ITO - vesting check", async() => {
     const token = await tttToken.new({from: ownerAddress});
     const tokenSell = await tttTokenSell.new(token.address, {from: ownerAddress});
 
-    var fbal = await token.balanceOf(testAddress);
-    valueCheck(fbal, 0);
+    var tBal0 = await token.balanceOf(testAddress);
+    valueCheck(tBal0, 0);
 
     await token.setTokenSaleAddress(tokenSell.address);
 
@@ -50,13 +51,13 @@ contract('tttTokenSell', function(accounts){
 
     await tokenSell.sendTransaction({value: web3.toWei("50", "Ether"), from: testAddress});
 
-    fbal = await token.balanceOf(testAddress);
-    valueCheck(fbal, 650000);
+    tBal0 = await token.balanceOf(testAddress);
+    valueCheck(tBal0, 650000);
 
     await tokenSell.buyTokens(testAddress2, {value: web3.toWei("50", "Ether"), from: testAddress2});
 
-    fbal = await token.balanceOf(testAddress2);
-    valueCheck(fbal, 650000);
+    tBal1 = await token.balanceOf(testAddress2);
+    valueCheck(tBal1, 650000);
 
     // end Privatesale phase
     await tokenSell.finalizePhase();
@@ -72,13 +73,13 @@ contract('tttTokenSell', function(accounts){
     await addSeconds(10000);
     await tokenSell.sendTransaction({value: web3.toWei("1", "Ether"), from: testAddress});
 
-    fbal = await token.balanceOf(testAddress);
-    valueCheck(fbal, 659750);
+    tBal0 = await token.balanceOf(testAddress);
+    valueCheck(tBal0, 659750);
 
     await tokenSell.buyTokens(testAddress2, {value: web3.toWei("1", "Ether"), from: testAddress2});
 
-    fbal = await token.balanceOf(testAddress2);
-    valueCheck(fbal, 659750);
+    tBal1 = await token.balanceOf(testAddress2);
+    valueCheck(tBal1, 659750);
 
     // end presale phase
     await tokenSell.finalizePhase();
@@ -88,38 +89,43 @@ contract('tttTokenSell', function(accounts){
     startsAt = currentBlockTime + 1000;
     endsAt = startsAt + 1000000;
 
+    // transfer check, should NOT allow
+    tBal0 = await token.balanceOf(testAddress);
+    try { await token.transfer(testAddress2, tbal0, {from: testAddress}); }
+    catch (e) { assert(true, true); }
+    // token buy, should NOT allow
+    try { await tokenSell.buyTokens(testAddress2, {value: web3.toWei("1", "Ether"), from: testAddress2}); }
+    catch (e) { assert(true, true); }
+
     // start crowdsale phase
     await tokenSell.startPhase(2, startsAt, endsAt, {address: ownerAddress});
 
     await addSeconds(10000);
     await tokenSell.sendTransaction({value: web3.toWei("1", "Ether"), from: testAddress});
 
-    fbal = await token.balanceOf(testAddress);
-    valueCheck(fbal, 668420);
+    tBal0 = await token.balanceOf(testAddress);
+    valueCheck(tBal0, 668420);
 
     await tokenSell.buyTokens(testAddress2, {value: web3.toWei("1", "Ether"), from: testAddress2});
 
-    fbal = await token.balanceOf(testAddress2);
-    valueCheck(fbal, 668420);
+    tBal1 = await token.balanceOf(testAddress2);
+    valueCheck(tBal1, 668420);
 
-    fbal = await token.balanceOf(crowdsaleAddress);
-    var cbal = fromBigNumberWeiToEth(fbal);
+    var ct = await token.balanceOf(crowdsaleAddress);
+    var cbal = fromBigNumberWeiToEth(ct);
     var burn = cbal * .7;
     var eco = cbal * .2;
     var air = cbal * .1;
     console.log("Ending crowdsale = "+cbal+" Burn = "+burn+" ToEco = "+eco+" ToAirdrop = "+air);
     // end ito
-    tokenSell.finalizeIto(burn, eco, air);
+    await tokenSell.finalizeIto(burn, eco, air);
 
     // verify transfer
-    tbal = await token.balanceOf(testAddress);
-    var tbal1 = await token.balanceOf(testAddress2);
-    var chk = tbal + tbal1;
-    await token.transfer(testAddress2, tbal, {from: testAddress});
-    fbal = await token.balanceOf(testAddress);
-    cbal = await token.balanceOf(testAddress2);
-    valueCheck(fbal, 0);
-    valueCheck(cbal, chk);
+    tBal1 = await token.balanceOf(testAddress2);
+    var chk = fromBigNumberWeiToEth(tBal1) + 10;
+    await token.transfer(testAddress2, web3.toWei("10", "Ether"), {from: testAddress});
+    tBal1 = await token.balanceOf(testAddress2);
+    valueCheck(tBal1, chk);
 
   });
 

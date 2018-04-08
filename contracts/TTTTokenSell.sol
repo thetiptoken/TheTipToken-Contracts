@@ -13,6 +13,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 	// TTTToken contract address
 	address public tokenAddress;
 	address public wallet;
+	// Wallets for each phase - hardcap of each is balanceOf
 	address public privatesaleAddress;
 	address public presaleAddress;
 	address public crowdsaleAddress;
@@ -23,8 +24,10 @@ contract TTTTokenSell is Whitelist, Pausable {
 	// Variables for phase start/end
 	uint256 public startsAt;
 	uint256 public endsAt;
-	uint ethMin;
-	uint ethMax;
+
+	// minimum and maximum
+	uint256 ethMin;
+	uint256 ethMax;
 
 	enum CurrentPhase { Privatesale, Presale, Crowdsale }
 
@@ -34,7 +37,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 	TTTToken public token;
 
 	event AmountRaised(address beneficiary, uint amountRaised);
-	event TokenPurchased(address indexed purchaser, uint256 value, uint256 amount);
+	event TokenPurchased(address indexed purchaser, uint256 value, uint256 wieAmount);
 	event TokenPhaseStarted(CurrentPhase phase, uint256 startsAt, uint256 endsAt);
 	event TokenPhaseEnded(CurrentPhase phase);
 
@@ -56,7 +59,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 		startsAt = 0;
 		endsAt = 0;
 		ethMin = 0;
-		ethMax = 10000 * 10**uint(18);
+		ethMax = numToWei(10000, decimals);
 	}
 
 	function startPhase(uint _phase, uint256 _startsAt, uint256 _endsAt) external onlyOwner {
@@ -104,6 +107,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 
 	function finalizeIto(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyOwner {
 		token.finalizeCrowdsale(numToWei(_burnAmount, decimals), numToWei(_ecoAmount, decimals), numToWei(_airdropAmount, decimals));
+		TokenPhaseEnded(currentPhase);
 	}
 
 	function getPhaseAddress() internal view returns (address phase) {
