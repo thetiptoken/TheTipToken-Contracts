@@ -30,6 +30,7 @@ contract TTTToken is ERC20, Ownable {
 	uint256 public secondVestStartsAt;
 	uint256 public firstVestAmount;
 	uint256 public secondVestAmount;
+	uint256 public currentVestedAmount;
 
 	uint256 public crowdsaleBurnAmount;
 
@@ -80,6 +81,7 @@ contract TTTToken is ERC20, Ownable {
 
 		firstVestAmount = teamSupply.div(2);
 		secondVestAmount = firstVestAmount;
+		currentVestedAmount = 0;
 
 		privatesaleAddress = 0x6876b854Bc0E2c59dc448949d1Caa5BF5bb08F54;
 		presaleAddress = 0xcab76A29D35cc2f6B481112157675486180A560B;
@@ -226,17 +228,18 @@ contract TTTToken is ERC20, Ownable {
 	// Transfer tokens from the vested address. 50% available 12/01/2018, the rest available 06/01/2019
 	function transferFromVest(uint256 _amount) public onlyOwner {
 		require(block.timestamp > firstVestStartsAt);
-		require(_amount > 0);
 		require(crowdsaleFinalized == true);
+		require(_amount > 0);
 		if(block.timestamp > secondVestStartsAt) {
 			// all tokens available for vest withdrawl
 			require(_amount <= teamSupply);
 			require(_amount <= balanceOf(teamSupplyAddress));
 		} else {
 			// only first vest available
-			require(_amount <= firstVestAmount);
+			require(_amount <= (firstVestAmount - currentVestedAmount));
 			require(_amount <= balanceOf(teamSupplyAddress));
 		}
+		currentVestedAmount = currentVestedAmount.add(_amount);
 		addToBalance(msg.sender, _amount);
 		decrementBalance(teamSupplyAddress, _amount);
 		Transfer(teamSupplyAddress, msg.sender, _amount);

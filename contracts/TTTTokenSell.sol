@@ -55,7 +55,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 
 		tokenAddress = _tokenAddress;
 		token = TTTToken(tokenAddress);
-
+		currentPhase = CurrentPhase.Privatesale;
 		startsAt = 0;
 		endsAt = 0;
 		ethMin = 0;
@@ -107,6 +107,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 
 	function finalizeIto(uint256 _burnAmount, uint256 _ecoAmount, uint256 _airdropAmount) external onlyOwner {
 		token.finalizeCrowdsale(numToWei(_burnAmount, decimals), numToWei(_ecoAmount, decimals), numToWei(_airdropAmount, decimals));
+		endsAt = block.timestamp;
 		TokenPhaseEnded(currentPhase);
 	}
 
