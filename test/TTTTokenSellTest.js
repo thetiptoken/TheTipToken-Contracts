@@ -146,13 +146,19 @@ contract('tttTokenSell', function(accounts){
     valueCheck(oBal, chk);
     console.log("10 months later vest succeeds");
 
+
+    // uncomment this to view emitted events
+    //assert(false,false);
+
   });
+
 
 });
 
 contract('tttToken', function(accounts){
 
   const ownerAddress = accounts[0];
+  const testAddress = accounts[1];
 
   // amount on creaion checks
   it("totalSupply: there should be 600 000 000 TTT", async () => {
@@ -199,6 +205,19 @@ contract('tttToken', function(accounts){
       assert(true, true);
       done();
     });
+  });
+
+  it("setOwner(): owner can be changed by owner only", async() => {
+    const token = await tttToken.new({from: ownerAddress});
+    await token.transferOwnership(testAddress, {from: ownerAddress});
+    // fails
+    try { await token.transferOwnership(testAddress, {from: ownerAddress}); }
+    catch (e) { assert(true, true); console.log("Owner could not be set by ownerAddress"); }
+
+
+    // uncomment this to view emitted events
+    //assert(false,false);
+
   });
 
 });
