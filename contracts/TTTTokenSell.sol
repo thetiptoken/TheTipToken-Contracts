@@ -33,6 +33,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 
 	CurrentPhase currentPhase;
 	uint public currentPhaseRate;
+	address public currentPhaseAddress;
 
 	TTTToken public token;
 
@@ -56,19 +57,22 @@ contract TTTTokenSell is Whitelist, Pausable {
 		tokenAddress = _tokenAddress;
 		token = TTTToken(tokenAddress);
 		currentPhase = CurrentPhase.Privatesale;
+		currentPhaseAddress = privatesaleAddress;
 		startsAt = 0;
 		endsAt = 0;
 		ethMin = 0;
 		ethMax = numToWei(10000, decimals);
 	}
 
-	function startPhase(uint _phase, uint256 _startsAt, uint256 _endsAt) external onlyOwner {
+	function startPhase(uint _phase, uint _currentPhaseRate, uint256 _startsAt, uint256 _endsAt) external onlyOwner {
 		require(_phase >= 0 && _phase <= 2);
 		require(_startsAt > endsAt && _endsAt > _startsAt);
+		require(_currentPhaseRate > 0);
 		currentPhase = CurrentPhase(_phase);
-		currentPhaseRate = getPhaseRate();
-		assert(currentPhaseRate > 0);
-		if(currentPhase == CurrentPhase.Privatesale) ethMin = numToWei(50, decimals);
+		currentPhaseAddress = getPhaseAddress();
+		assert(currentPhaseAddress != 0x0);
+		currentPhaseRate = _currentPhaseRate;
+		if(currentPhase == CurrentPhase.Privatesale) ethMin = numToWei(10, decimals);
 		else {
 			ethMin = 0;
 			ethMax = numToWei(15, decimals);
@@ -82,13 +86,13 @@ contract TTTTokenSell is Whitelist, Pausable {
 		require(whitelist[_to]);
 		require(msg.value >= ethMin && msg.value <= ethMax);
 		require(_to != 0x0);
-		address from = getPhaseAddress();
-		assert(from != 0x0);
 		uint256 weiAmount = msg.value;
 		uint256 tokens = weiAmount.mul(currentPhaseRate);
+		// 100% bonus for privatesale
+		if(currentPhase == CurrentPhase.Privatesale) tokens = tokens.add(tokens);
 		weiRaised = weiRaised.add(weiAmount);
 		wallet.transfer(weiAmount);
-		if(!token.transferFromTokenSell(_to, from, tokens)) revert();
+		if(!token.transferFromTokenSell(_to, currentPhaseAddress, tokens)) revert();
 		TokenPurchased(_to, tokens, weiAmount);
 	}
 
@@ -116,14 +120,6 @@ contract TTTTokenSell is Whitelist, Pausable {
 		else if(currentPhase == CurrentPhase.Presale) return presaleAddress;
 		else if(currentPhase == CurrentPhase.Crowdsale) return crowdsaleAddress;
 		return 0x0;
-	}
-
-	// Amount of TTT per 1 ether. Will be updated closed to deployment
-	function getPhaseRate() internal view returns (uint rate) {
-		if(currentPhase == CurrentPhase.Privatesale) return 13000;
-		else if(currentPhase == CurrentPhase.Presale) return 9750;
-		else if(currentPhase == CurrentPhase.Crowdsale) return 8670;
-		return 0;
 	}
 
 	function numToWei(uint256 _num, uint _decimals) internal pure returns (uint256 w) {

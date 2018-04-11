@@ -48,21 +48,23 @@ contract('tttTokenSell', function(accounts){
     var currentBlockTime = await getTimestampOfCurrentBlock();
     var startsAt = currentBlockTime + 1000;
     var endsAt = startsAt + 1000000;
-
-    await tokenSell.startPhase(0, startsAt, endsAt, {from: ownerAddress});
+    var rate = 13000;
+    await tokenSell.startPhase(0, rate, startsAt, endsAt, {from: ownerAddress});
     await addSeconds(10000);
     await tokenSell.addAddressToWhitelist(testAddress);
     await tokenSell.addAddressToWhitelist(testAddress2);
 
-    await tokenSell.sendTransaction({value: web3.toWei("50", "Ether"), from: testAddress});
+    await tokenSell.sendTransaction({value: web3.toWei("10", "Ether"), from: testAddress});
 
     tBal0 = await token.balanceOf(testAddress);
-    valueCheck(tBal0, 650000);
+    var currt0Bal = (rate * 10) * 2;
+    valueCheck(tBal0, currt0Bal);
 
-    await tokenSell.buyTokens(testAddress2, {value: web3.toWei("50", "Ether"), from: testAddress2});
+    await tokenSell.buyTokens(testAddress2, {value: web3.toWei("10", "Ether"), from: testAddress2});
 
     tBal1 = await token.balanceOf(testAddress2);
-    valueCheck(tBal1, 650000);
+    var currt1Bal = (rate * 10) * 2;
+    valueCheck(tBal1, currt1Bal);
 
     // end Privatesale phase
     await tokenSell.finalizePhase();
@@ -71,20 +73,22 @@ contract('tttTokenSell', function(accounts){
     currentBlockTime = await getTimestampOfCurrentBlock();
     startsAt = currentBlockTime + 1000;
     endsAt = startsAt + 1000000;
-
+    rate = 9750;
     // start presale phase
-    await tokenSell.startPhase(1, startsAt, endsAt, {address: ownerAddress});
+    await tokenSell.startPhase(1, rate, startsAt, endsAt, {address: ownerAddress});
 
     await addSeconds(10000);
     await tokenSell.sendTransaction({value: web3.toWei("1", "Ether"), from: testAddress});
 
     tBal0 = await token.balanceOf(testAddress);
-    valueCheck(tBal0, 659750);
+    currt0Bal += rate * 1;
+    valueCheck(tBal0, currt0Bal);
 
     await tokenSell.buyTokens(testAddress2, {value: web3.toWei("1", "Ether"), from: testAddress2});
 
     tBal1 = await token.balanceOf(testAddress2);
-    valueCheck(tBal1, 659750);
+    currt1Bal += rate * 1;
+    valueCheck(tBal1, currt1Bal);
 
     // end presale phase
     await tokenSell.finalizePhase();
@@ -103,18 +107,21 @@ contract('tttTokenSell', function(accounts){
     catch (e) { assert(true, true); console.log("Phase not active - token buy fail as expected"); }
 
     // start crowdsale phase
-    await tokenSell.startPhase(2, startsAt, endsAt, {address: ownerAddress});
+    rate = 8670;
+    await tokenSell.startPhase(2, rate, startsAt, endsAt, {address: ownerAddress});
 
     await addSeconds(10000);
     await tokenSell.sendTransaction({value: web3.toWei("1", "Ether"), from: testAddress});
 
     tBal0 = await token.balanceOf(testAddress);
-    valueCheck(tBal0, 668420);
+    currt0Bal += rate * 1;
+    valueCheck(tBal0, currt0Bal);
 
     await tokenSell.buyTokens(testAddress2, {value: web3.toWei("1", "Ether"), from: testAddress2});
 
     tBal1 = await token.balanceOf(testAddress2);
-    valueCheck(tBal1, 668420);
+    currt1Bal += rate * 1;
+    valueCheck(tBal1, currt1Bal);
 
     var ct = await token.balanceOf(crowdsaleAddress);
     var cbal = fromBigNumberWeiToEth(ct);
