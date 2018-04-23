@@ -61,7 +61,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 		startsAt = 0;
 		endsAt = 0;
 		ethMin = 0;
-		ethMax = numToWei(10000, decimals);
+		ethMax = numToWei(1000, decimals);
 	}
 
 	function startPhase(uint _phase, uint _currentPhaseRate, uint256 _startsAt, uint256 _endsAt) external onlyOwner {
