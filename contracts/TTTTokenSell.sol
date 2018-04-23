@@ -26,12 +26,12 @@ contract TTTTokenSell is Whitelist, Pausable {
 	uint256 public endsAt;
 
 	// minimum and maximum
-	uint256 ethMin;
-	uint256 ethMax;
+	uint256 public ethMin;
+	uint256 public ethMax;
 
 	enum CurrentPhase { Privatesale, Presale, Crowdsale }
 
-	CurrentPhase currentPhase;
+	CurrentPhase public currentPhase;
 	uint public currentPhaseRate;
 	address public currentPhaseAddress;
 
