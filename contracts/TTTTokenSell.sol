@@ -29,7 +29,7 @@ contract TTTTokenSell is Whitelist, Pausable {
 	uint256 public ethMin;
 	uint256 public ethMax;
 
-	enum CurrentPhase { Privatesale, Presale, Crowdsale }
+	enum CurrentPhase { Privatesale, Presale, Crowdsale, None }
 
 	CurrentPhase public currentPhase;
 	uint public currentPhaseRate;
@@ -47,21 +47,25 @@ contract TTTTokenSell is Whitelist, Pausable {
 		_;
 	}
 
-	function TTTTokenSell(address _tokenAddress) {
+	function TTTTokenSell() {
 		wallet = 0xea2d2c0223af6e9c83db343aef2194564b27ee87;
 
 		privatesaleAddress = 0x6876b854Bc0E2c59dc448949d1Caa5BF5bb08F54;
 		presaleAddress = 0xcab76A29D35cc2f6B481112157675486180A560B;
 		crowdsaleAddress = 0xb6d40Fb512e7c824c6a33861b233eE50c263A950;
-
-		tokenAddress = _tokenAddress;
-		token = TTTToken(tokenAddress);
-		currentPhase = CurrentPhase.Privatesale;
+		
+		currentPhase = CurrentPhase.None;
 		currentPhaseAddress = privatesaleAddress;
 		startsAt = 0;
 		endsAt = 0;
 		ethMin = 0;
 		ethMax = numToWei(1000, decimals);
+	}
+	
+	function setTokenAddress(address _tokenAddress) external onlyOwner {
+		require(tokenAddress == 0x0);
+		tokenAddress = _tokenAddress;
+		token = TTTToken(tokenAddress);
 	}
 
 	function startPhase(uint _phase, uint _currentPhaseRate, uint256 _startsAt, uint256 _endsAt) external onlyOwner {
